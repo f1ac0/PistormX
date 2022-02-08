@@ -801,14 +801,6 @@ Text Label 1500 3550 2    50   ~ 0
 FC2
 Text Label 1500 4950 2    50   ~ 0
 BERR
-Text Label 4700 5750 2    50   ~ 0
-FC0
-Text Label 4700 5850 2    50   ~ 0
-FC1
-Text Label 4700 5950 2    50   ~ 0
-FC2
-Text Label 4700 3550 2    50   ~ 0
-BERR
 $Comp
 L Device:C_Small C3
 U 1 1 61015A90
@@ -982,4 +974,84 @@ F 3 "~" H 650 7200 50  0001 C CNN
 	1    650  7200
 	1    0    0    -1  
 $EndComp
+$Comp
+L Device:Jumper_NO_Small JP5
+U 1 1 618C0E0C
+P 900 4950
+F 0 "JP5" H 900 5135 50  0000 C CNN
+F 1 "BERR" H 900 5044 50  0000 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm" H 900 4950 50  0001 C CNN
+F 3 "~" H 900 4950 50  0001 C CNN
+	1    900  4950
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:Jumper_NO_Small JP2
+U 1 1 618C5E3E
+P 900 3350
+F 0 "JP2" H 900 3535 50  0000 C CNN
+F 1 "FC0" H 900 3444 50  0000 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm" H 900 3350 50  0001 C CNN
+F 3 "~" H 900 3350 50  0001 C CNN
+	1    900  3350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:Jumper_NO_Small JP3
+U 1 1 618C6B4D
+P 900 3600
+F 0 "JP3" H 900 3785 50  0000 C CNN
+F 1 "FC1" H 900 3694 50  0000 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm" H 900 3600 50  0001 C CNN
+F 3 "~" H 900 3600 50  0001 C CNN
+	1    900  3600
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:Jumper_NO_Small JP4
+U 1 1 618C6EFB
+P 900 3850
+F 0 "JP4" H 900 4035 50  0000 C CNN
+F 1 "FC2" H 900 3944 50  0000 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm" H 900 3850 50  0001 C CNN
+F 3 "~" H 900 3850 50  0001 C CNN
+	1    900  3850
+	1    0    0    -1  
+$EndComp
+Text Label 800  3350 2    50   ~ 0
+FC0-
+Text Label 800  3600 2    50   ~ 0
+FC1-
+Text Label 800  3850 2    50   ~ 0
+FC2-
+Wire Wire Line
+	1500 3350 1000 3350
+Wire Wire Line
+	1500 3450 1100 3450
+Wire Wire Line
+	1100 3450 1100 3600
+Wire Wire Line
+	1100 3600 1000 3600
+Wire Wire Line
+	1500 3550 1200 3550
+Wire Wire Line
+	1200 3550 1200 3850
+Wire Wire Line
+	1200 3850 1000 3850
+Wire Wire Line
+	1500 4950 1000 4950
+Text Label 800  4950 2    50   ~ 0
+BERR-
+Text Label 4700 3550 2    50   ~ 0
+BERR-
+Text Label 4700 5950 2    50   ~ 0
+FC2-
+Text Label 4700 5850 2    50   ~ 0
+FC1-
+Text Label 4700 5750 2    50   ~ 0
+FC0-
+Text Notes 10100 5500 0    50   ~ 0
+Pullup already present on\nthe Amiga motherboard
+Text Notes 9700 2750 0    50   ~ 0
+pi 3.3v regulator should\nnot be powerful enough
 $EndSCHEMATC
