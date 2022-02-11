@@ -8,7 +8,8 @@ It has differences in the logic implementation to accommodate the slower CPLD an
 - The Pistorm'X is easier to assemble manually : there is only one QFP package, the board is less crowded, and the friendly 2-layer PCB with thermal relief makes it less vulnerable to cold joints.
 - Maybe this can be as powerful and feature rich as the Pistorm. So far I tested, with success, only basic confs and only the Musashi based emulator. Still it is not guaranteed that it will support all the features of the Pistorm.
 - For now, it runs the same software on the Pi than the Pistorm. Except CPLD programming : do not burn Altera bitstream on Xilinx device or vice versa !
-- Because everything is reprogrammable in the CPLD, it may do things not possible on the original hardware, like buffering write operations. Because of this future versions may require different Pi software. Stay tuned !
+- Because everything is reprogrammable in the CPLD, it may do things not possible on the original hardware. Because of this future versions could require different Pi software.
+- There are now two versions of the firmware : the simple one - and the one with write buffers that releases the pi bus a bit earlier during writes. Sysinfo show a tiny increase in CPU performance but not in chip ram access speed :(.
 
 # Acknowledgements
 The board and its firmware are inspired by the original Pistorm : https://github.com/captain-amygdala/pistorm. However both are really different.

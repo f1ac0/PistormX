@@ -4,10 +4,10 @@
  * Inspired by original Pistorm, Copyright 2020 Claude Schwarz and Niklas Ekström, https://github.com/captain-amygdala/pistorm
  */
 module pistormx(
-	output reg      PI_TXN_IN_PROGRESS, // GPIO0 //AUX0
+	output          PI_TXN_IN_PROGRESS, // GPIO0 //AUX0
 	output          PI_IPL_ZERO,        // GPIO1 //AUX1
 	input   [1:0]   PI_A,       // GPIO[3..2]
-	input           PI_CLK,     // GPIO4 // Not used
+//	input           PI_CLK,     // GPIO4 // Not used
 	output          PI_RESET,   // GPIO5
 	input           PI_RD,      // GPIO6
 	input           PI_WR,      // GPIO7
@@ -16,7 +16,7 @@ module pistormx(
 	output  [23:1]	 M68K_A,
 	inout   [15:0]	 M68K_D,
 	input           M68K_CLK,
-	output reg [2:0] M68K_FC,   // PU on Amiga MB // Not used
+//	output  [2:0]   M68K_FC,   // PU on Amiga MB // Not used
 
 	output          M68K_AS_n,  // PU on Amiga MB
 	output          M68K_UDS_n, // PU on Amiga MB
@@ -24,7 +24,7 @@ module pistormx(
 	output          M68K_RW,    // PU on Amiga MB
 
 	input           M68K_DTACK_n,
-	input           M68K_BERR_n, // Not used
+//	input           M68K_BERR_n, // Not used
 
 	input           M68K_VPA_n,
 	output          M68K_E,     // No PU on Amiga MB
@@ -40,11 +40,9 @@ module pistormx(
 //	input           M68K_BGACK_n
  );
 
-  initial begin
-    PI_TXN_IN_PROGRESS <= 1'b0;
-    M68K_FC <= 3'd0;
+//  initial begin
 //    M68K_BG_n <= 1'b1;
-  end
+//  end
 
   localparam REG_DATA = 2'd0;
   localparam REG_ADDR_LO = 2'd1;
@@ -54,9 +52,8 @@ module pistormx(
   wire c7m = M68K_CLK;
   reg M68K_VMA_nr = 1'd1;
 
-  reg [15:0] D_IN;	//A single D buffer may be enough instead of IN/OUT
-  reg [15:0] D_OUT;
-  reg [23:1] A_OUT;
+  reg [15:0] d_out;
+  reg [23:1] a_out;
 
   reg s0=1'd1; //M68K bus states
   reg s1=1'd0;
@@ -71,7 +68,6 @@ module pistormx(
 
   reg [2:0] ipl;
   reg [2:0] ipl_a;
-  reg [2:0] ipl_out;
 
 //  reg st_init = 1'b0; //1=reset, 0=run
   reg st_reset_out = 1'b1; //1=reset, 0=run
@@ -79,72 +75,24 @@ module pistormx(
   reg op_rw = 1'b1; //1=read, 0=write
   reg op_a0 = 1'b0; //1=lds, 0=uds, when sz=byte
   reg op_sz = 1'b0; //1=byte, 0=word
-  wire op_uds_n = op_sz & op_a0; //disable uds when byte operation on odd address
-  wire op_lds_n = op_sz & !op_a0; //disable lds when byte operation on even address
 
-  reg [1:0] resetfilter=2'b11;
-  wire oor = resetfilter==2'b01; //pulse when out of reset
+//buffered write
+  reg [15:0] buf_d;
+  reg [23:1] buf_a;
+  reg buf_rw;
+  reg buf_a0;
+  reg buf_sz;
+
 
 // RESET
+  reg [1:0] resetfilter=2'b11;
+  wire oor = resetfilter==2'b01; //pulse when out of reset. delay by one clock pulse is required to prevent lock after reset
   always @(negedge c7m) begin
     resetfilter <= {resetfilter[0],M68K_RESET_n};
   end
   assign PI_RESET = st_reset_out ? 1'b1 : M68K_RESET_n;
   assign M68K_RESET_n = st_reset_out ? 1'b0 : 1'bz;
   assign M68K_HALT_n = st_reset_out ? 1'b0 : 1'bz;
-
-
-// PI SIDE
-
-// PI READ CYCLE
-// place the required data word on the bus when PI_RD is set. In a REG_DATA cycle, Data is latched after the falling edge of PI_TXN_IN_PROGRESS
-  assign PI_D = ((PI_A == REG_STATUS) && PI_RD) ? {ipl_out, 13'd0} : ((PI_A == REG_DATA && PI_RD) ? D_IN : 16'bz);
-// latch status register so that it does not change during read cycle ?
-  always @(posedge PI_RD) begin
-    if (PI_A == REG_STATUS)
-      ipl_out <= ipl;
-  end
-
-// PI WRITE CYCLE
-  always @(posedge PI_WR) begin
-    case (PI_A)
-      REG_ADDR_LO: begin
-        op_a0 <= PI_D[0];
-        A_OUT[15:1] <= PI_D[15:1];
-      end
-      REG_ADDR_HI: begin
-        A_OUT[23:16] <= PI_D[7:0];
-        op_sz <= PI_D[8];
-        op_rw <= PI_D[9];
-      end
-      REG_STATUS: begin
-//		  st_init <= PI_D[0];
-        st_reset_out <= !PI_D[1];
-      end
-      REG_DATA: begin
-        D_OUT <= PI_D;
-      end
-    endcase
-  end
-  
-// Sync with 68K bus operations
-  wire op_txnrst= s5 | oor;
-  always @(posedge PI_WR, posedge op_txnrst) begin //s7 Pistorm latches early !
-    if (op_txnrst)
-      PI_TXN_IN_PROGRESS <= 1'b0;
-    else if (PI_A==REG_ADDR_LO)
-      PI_TXN_IN_PROGRESS <= 1'b1;
-  end
-  wire op_reqrst= s3 | oor;
-  always @(posedge PI_WR, posedge op_reqrst) begin
-    if (op_reqrst)
-      op_req <= 1'b0;
-    else if (PI_A==REG_ADDR_HI)
-      op_req <= 1'b1;
-  end
-
-
-//68K BUS SIDE
 
 // E CLOCK
 // A single period of clock E consists of 10 MC68000 clock periods (six clocks low, four clocks high)
@@ -155,6 +103,72 @@ module pistormx(
       e_counter <= e_counter + 4'd1;
   end
   assign M68K_E = (e_counter > 4'd5) ? 1'b1:1'b0; //six clocks low (0-5), four clocks high (6-9)
+
+// INTERRUPT CONTROL
+  always @(negedge c7m) begin
+    ipl_a <= ~M68K_IPL_n;
+    if (ipl_a == ~M68K_IPL_n) //filter unstable signals
+      ipl <= ~M68K_IPL_n;
+  end
+  assign PI_IPL_ZERO = ipl == 3'd0;
+
+
+// PI SIDE
+
+// PI READ CYCLE
+// place the required data word on the bus when PI_RD is set. In a REG_DATA cycle, Data is latched after the falling edge of PI_TXN_IN_PROGRESS
+  assign PI_D = ((PI_A == REG_STATUS) && PI_RD) ? {ipl, 13'd0} : ((PI_A == REG_DATA && PI_RD) ? buf_d : 16'bz);
+
+// PI WRITE CYCLE
+  always @(posedge PI_WR) begin
+    case (PI_A)
+      REG_ADDR_LO: begin
+        buf_a0 <= PI_D[0];
+        buf_a[15:1] <= PI_D[15:1];
+      end
+      REG_ADDR_HI: begin
+        buf_a[23:16] <= PI_D[7:0];
+        buf_sz <= PI_D[8];
+        buf_rw <= PI_D[9];
+      end
+      REG_STATUS: begin
+//		  st_init <= PI_D[0];
+        st_reset_out <= !PI_D[1];
+      end
+    endcase
+  end
+  
+
+// Sync with 68K bus operations
+  assign PI_TXN_IN_PROGRESS = op_req;
+
+  wire op_reqrst= (op_rw?s4:s3) | oor;
+  wire op_reqset= PI_WR & PI_A==REG_ADDR_HI;
+  always @(posedge op_reqset, posedge op_reqrst) begin
+    if (op_reqset)
+      op_req <= 1'b1;
+    else
+      op_req <= 1'b0;
+  end
+
+  wire d_ck = (PI_WR & PI_A==REG_DATA) | (s4 & op_rw) ;
+  always @(posedge d_ck) begin
+    if(op_rw & (s3|s4))
+      buf_d <= M68K_D;
+	 else
+	   buf_d <= PI_D;
+  end
+  
+  always @(posedge s2) begin
+    a_out<=buf_a;
+    d_out<=buf_d;
+    op_a0<=buf_a0;
+    op_sz<=buf_sz;
+    op_rw<=buf_rw;
+  end
+  
+  
+//68K BUS SIDE
 
 // BUS TRANSFER STATE MACHINE
   wire s1rst= s2 | oor;
@@ -173,8 +187,9 @@ module pistormx(
   always @(posedge c7m, posedge s2rst) begin
     if(s2rst)
       s2<=1'd0;
-    else if(s1 && op_req)
+    else if(s1 && op_req) begin
       s2<=1'd1;
+    end
   end
   always @(negedge c7m, posedge s3rst) begin
     if(s3rst)
@@ -216,17 +231,13 @@ module pistormx(
 //	output [23:1]	M68K_A,
 // Entering S1, the processor drives a valid address on the address bus.
 // As the clock rises at the end of S7, the processor places the address and data buses in the high-impedance state
-  assign M68K_A = (s0) ? 23'bz : A_OUT;
+  assign M68K_A = (s0) ? 23'bz : a_out;
   
-//	output [15:0]	M68K_D,
+//	inout [15:0]	M68K_D,
 // READ : On the falling edge of the clock entering state 7 (S7), the processor latches data from the addressed device
 // WRITE : During S3, the data bus is driven out of the high-impedance state as the data to be written is placed on the bus.
 // As the clock rises at the end of S7, the processor places the address and data buses in the high-impedance state
-  always @(posedge s4) begin //s7 Pistorm latches early !
-    if(op_rw)
-      D_IN <= M68K_D;
-  end
-  assign M68K_D = (s0|s1|s2|op_rw) ? 16'bz : D_OUT;
+  assign M68K_D = (s0|s1|s2|op_rw) ? 16'bz : d_out;
 
 //	output  reg [2:0] M68K_FC,
 //not supported
@@ -241,15 +252,15 @@ module pistormx(
 // READ : On the rising edge of state 2 (S2), the processor asserts AS and UDS, LDS, or DS
 // WRITE : At the rising edge of S4, the processor asserts UDS, or LDS
 // On the falling edge of the clock entering S7, the processor negates AS, UDS, or LDS
-  assign M68K_UDS_n = (s0|s1|((s2)&!op_rw)|s7|op_uds_n) ? 1'b1:1'b0; //|s3 DS should be set in s3 otherwise pistorm won't work !
-  assign M68K_LDS_n = (s0|s1|((s2)&!op_rw)|s7|op_lds_n) ? 1'b1:1'b0; //|s3
+  wire op_ds_n = s0|s1|((s2)&!op_rw)|s7; //|s3 DS should be set in s3 otherwise pistorm won't work !
+  assign M68K_UDS_n = (op_ds_n|(op_sz & op_a0)) ? 1'b1:1'b0; //disable uds when byte operation on odd address
+  assign M68K_LDS_n = (op_ds_n|(op_sz & !op_a0)) ? 1'b1:1'b0; //disable lds when byte operation on even address
 
 //	output      M68K_RW,
 // On the rising edge of S2, the processor asserts AS and drives R/W low.
 // As the clock rises at the end of S7, the processor drives R/W high
   assign M68K_RW = (s0|s1|op_rw) ? 1'b1:1'b0;
   
-//	output reg      M68K_E,
 //	output reg      M68K_VMA_n,
   wire vmarst= s7 | oor;
   always @(posedge c7m,posedge vmarst) begin
@@ -259,18 +270,6 @@ module pistormx(
       M68K_VMA_nr <= 1'b0;
   end
   assign M68K_VMA_n = M68K_VMA_nr ? 1'b1:1'b0;
-
-//	output reg      PI_TXN_IN_PROGRESS, // GPIO0 //AUX0
-
-
-// INTERRUPT CONTROL
-  always @(negedge c7m) begin
-    ipl_a <= ~M68K_IPL_n;
-    if (ipl_a == ~M68K_IPL_n) //filter unstable signals
-      ipl <= ~M68K_IPL_n;
-  end
-  assign PI_IPL_ZERO = ipl == 3'd0;
-
 
 
 endmodule
