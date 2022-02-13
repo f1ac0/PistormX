@@ -4,7 +4,7 @@
  * Inspired by original Pistorm, Copyright 2020 Claude Schwarz and Niklas Ekström, https://github.com/captain-amygdala/pistorm
  */
 module pistormx(
-	output reg      PI_TXN_IN_PROGRESS, // GPIO0 //AUX0
+	output          PI_TXN_IN_PROGRESS, // GPIO0 //AUX0
 	output          PI_IPL_ZERO,        // GPIO1 //AUX1
 	input   [1:0]   PI_A,       // GPIO[3..2]
 //	input           PI_CLK,     // GPIO4 // Not used
@@ -40,10 +40,9 @@ module pistormx(
 //	input           M68K_BGACK_n
  );
 
-  initial begin
-    PI_TXN_IN_PROGRESS <= 1'b0;
+//  initial begin
 //    M68K_BG_n <= 1'b1;
-  end
+//  end
 
   localparam REG_DATA = 2'd0;
   localparam REG_ADDR_LO = 2'd1;
@@ -137,19 +136,14 @@ module pistormx(
   end
   
 // Sync with 68K bus operations
-  wire op_txnrst= s5 | oor; //s5 instead of s7 Pistorm latches early !
-  always @(posedge PI_WR, posedge op_txnrst) begin
-    if (op_txnrst)
-      PI_TXN_IN_PROGRESS <= 1'b0;
-    else if (PI_A==REG_ADDR_LO)
-      PI_TXN_IN_PROGRESS <= 1'b1;
-  end
-  wire op_reqrst= s3 | oor;
-  always @(posedge PI_WR, posedge op_reqrst) begin
-    if (op_reqrst)
-      op_req <= 1'b0;
-    else if (PI_A==REG_ADDR_HI)
+  assign PI_TXN_IN_PROGRESS = op_req;
+  wire op_reqrst= (op_rw?s4:s3) | oor;
+  wire op_reqset= PI_WR & PI_A==REG_ADDR_HI;
+  always @(posedge op_reqset, posedge op_reqrst) begin
+    if (op_reqset)
       op_req <= 1'b1;
+    else
+      op_req <= 1'b0;
   end
 
 
