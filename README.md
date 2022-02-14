@@ -1,41 +1,56 @@
 # Pistorm'X
-This is a simplified board for the Pistorm, the MC68000 replacement using a raspberry Pi : https://github.com/captain-amygdala/pistorm
-Here, all the logic is integrated inside a single XC94144XL-10TQ100 CPLD with 5V compatible IOs.
+If you don't know about Pistorm, the MC68000 CPU replacement using a raspberry Pi, see here : https://github.com/captain-amygdala/pistorm
 
-This board is experimental, not yet well tested, and might not work with all system revisions and Pi or 68k software or provide the same performance or feature than the original. That it works for me does not mean that it will work for you. For this reason you are welcome to assemble your own and share test reports. And for this reason this board or derivatives must not be sold to end users : do not sell it and do not buy it yet.
+This Pistorm'X is a simplified CPU board, where all the logic is integrated inside a single XC94144XL-10TQ100 CPLD with 5V compatible IOs.
 
-It has differences in the logic implementation to accommodate the slower CPLD and may present differences with the original Pistorm. A challenge has been to get rid of the 200MHz clock since the fastest Xilinx part in this series, the 5ns one, is rated for 178MHz max and is overpriced because of the chip shortage. Not using the PI_CLK makes the firmware really different from the original : a standard 10ns XC95144 can now deal with both the M68000 bus cycle synchronously to the 7MHz clock, and the asynchronous communication with the Pi that is just within the 10ns limit. 
+It has major differences in the logic implementation to accommodate the slower CPLD and may behave differently than the original Pistorm CPU board. A challenge has been to get rid of the 200MHz clock since the fastest Xilinx part in this series, the 5ns one, is rated for 178MHz max and is overpriced because of the chip shortage. Not using the PI_CLK makes the firmware really different from the original : a standard 10ns XC95144 can now deal with both the M68000 bus cycle synchronously to the 7MHz clock, and the asynchronous communication with the Pi that is just within the 10ns limit. 
 
 Why you may consider building one :
-- This Pistorm'X is even cheaper than the original Pistorm board thanks to its single chip and 2-layer PCB.
-- The Pistorm'X is easier to assemble manually : there is only one QFP package, the board is less crowded, with 0805 caps, and the friendly 2-layer PCB with thermal relief makes it less vulnerable to cold joints.
-- Maybe this can be as powerful and feature rich as the Pistorm. So far I tested, with success, only basic confs and only the Musashi based emulator inside my own Amiga 500 rev8a. It is not guaranteed that it will support all the features of the Pistorm.
+- This is even cheaper than the original board thanks to its single chip and 2-layer PCB.
+- It is easier to assemble manually : there is only one QFP package, the board is less crowded, with 0805 caps, and the friendly 2-layer PCB with thermal relief makes it less vulnerable to cold joints.
+- Maybe this will prove to be a suitable CPU board replacement. Your test contribution can help that.
 - It runs with the same Pi software. Except CPLD programming : do not burn Altera bitstream on Xilinx device or vice versa !
-- Because everything is reprogrammable in the CPLD, it may do things not possible on the original hardware. Because of this future versions could require different Pi software.
-- There are now two versions of the firmware : the simple one - and the one with write buffers that releases the Pi bus earlier during writes. Sysinfo show a tiny increase in CPU performance but not in chip ram access speed :(.
+- Because everything is reprogrammable in the CPLD, it may do things not possible on the original hardware. For example there are now two versions of the firmware : the simple one - and the one with write buffers that releases the Pi bus earlier during writes. Sysinfo show a tiny increase in CPU performance but not in chip ram access speed.
 
-The v0.1 board was routed with the actual Pistorm firmware in mind, so actually the 7MHz clock does not take advantage of a Global Clock pin of the CPLD : pinout may change in next releases. Also the actual pinout was chosen only to ease PCB routing : it will probably vary in order to keep the 2-layers PCB in other versions (A600, A2000...) and so will the firmware.
+Why you should prefer the original CPU board :
+- This is alpha status. So far it is not guaranteed that it will work in your system or support all the features of the original.
+- It is not an official board.
+- It will probably not be compatible with future improvements or there will be delays to implement them.
+- The actual CPLD pinout was chosen only to ease PCB routing and use a cheap 2-layers PCB. Future versions for different targets (A600, A2000...) will probably do the same and require a different CPLD pinout for each board, which means dedicated firmware files.
+- The v0.1 board was routed with the actual Pistorm firmware in mind, so actually the 7MHz clock does not take advantage of a Global Clock pin of the CPLD : pinout may also change in next releases of this board.
+
+# Experimental status
+This board is experimental, not yet well tested, and might not work with all system revisions and Pi or 68k software or provide the same performance or feature than the original. That it works for me does not mean that it will work for you. For this reason you are welcome to assemble your own and share test reports. And for this same reason this board or derivatives must not be sold to end users : do not sell it and do not buy it yet.
+
+- I am an end user, where can I buy it? Buy an original Pistorm CPU board.
+- I am a builder, can I sell it? For now, please test it and report your test results.
+- I am a maker, can I build derivatives? For now, please test it and report your test results.
+
+Tested so far with success :
+- inside my own Amiga 500 rev8a,
+- buptest,
+- Musashi based emulator with basic configurations and KS1.3, 3.1 and DiagROM.
 
 # Acknowledgements
 The board and its firmware are inspired by the original Pistorm : https://github.com/captain-amygdala/pistorm.
 I would like to thank Claude Schwarz for designing and open sourcing the Pistorm and for letting other projects like this one use the name and get inspired by the source code.
 Thank you also to EDU_ARANA for letting me use his Pistorm logo with some modifications on the PCB silkscreen.
-It is not supported by the Pistorm developpers, please don't bother them with issues you might have with it.
+It is not supported by the Pistorm developers, please don't bother them with issues you might have with it.
 
 # Disclaimer
-This is a hobbyist project, it comes with no warranty and no support. Also remember that the Amiga machines are about 30 years old and may fail because of such hardware expansions. Again, this Pistorm'X is pre-alpha. Use with caution it could burn your Pi, your Amiga, your house.
+This is a hobbyist project, it comes with no warranty and no support. Also remember that the Amiga machines are about 30 years old and may fail because of such hardware expansions. Use with caution it could burn your Pi, your Amiga, your house.
 
 I publish my work under the CC-BY-NC-SA license. You may build a board for you or your friend but will not sell or buy it commercially because it is experimental. You must keep the original author's name, source and licensing conditions even if you modify the product.
 
-If you find it useful and want to reward my hard work : I am always looking for Amiga/Amstrad CPC hardware to repair and hack, or software licences for these.
+If you find it useful and want to reward my hard work : I am always looking for Amiga/Amstrad CPC and such retro hardware to repair and hack, or software licenses for these. Other than that, give to charities and reduce your carbon footprint. 
 
 # BOM
 - 1x XC95144XL-10TQ100 CPLD
-- 1x 3.3v LDO, either SPX3819M5-L-3-3 or XC6206P332MR
-- 2x 1uF (or more) 0805 capacitors
+- 1x 3.3v LDO, either SPX3819M5-L-3-3 or XC6206P332MR or equivalent
+- 2x 1uF (or more) 0805 capacitors in C1 and C2
 - 6x 100nF 0805 capacitors
-- 1x 10k 0805 resistor (optional?)
-- 64x rounded socket pins. I use pins taken from a socket header.
+- (1x 10k 0805 resistor in R1, not required in my case)
+- 64x rounded socket pins. I use pins taken from a socket header. You can omit pins 11,12,13,22,26,27 and 28.
 - 1x 2x20 2.54mm female pin header.
 
 # Making it
@@ -80,5 +95,5 @@ sudo xc3sprog -c sysfsgpio_creator -v -p 0 pistormx.jed
 ```
 
 # Using it
-See the official Pistorm documentation. Buptest should work with no error, then the Emulator.
+See the official Pistorm documentation.
 
