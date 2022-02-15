@@ -40,7 +40,7 @@ It is not supported by the Pistorm developers, please don't bother them with iss
 # Disclaimer
 This is a hobbyist project, it comes with no warranty and no support. Also remember that the Amiga machines are about 30 years old and may fail because of such hardware expansions. Use with caution it could burn your Pi, your Amiga, your house.
 
-I publish my work under the CC-BY-NC-SA license. You may build a board for you or your friend but will not sell or buy it commercially because it is experimental. You must keep the original author's name, source and licensing conditions even if you modify the product.
+I publish my work under the CC-BY-NC-SA license. You may build a board for you or your friend but will not sell or buy it commercially because it is experimental. You must keep the original author's name, source repository (https://github.com/f1ac0/PistormX) and licensing conditions even if you modify the product.
 
 If you find it useful and want to reward my hard work : I am always looking for Amiga/Amstrad CPC and such retro hardware to repair and hack, or software licenses for these. Other than that, give to charities and reduce your carbon footprint. 
 
