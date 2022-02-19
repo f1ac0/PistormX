@@ -137,7 +137,7 @@ module pistormx(
   
 // Sync with 68K bus operations
   assign PI_TXN_IN_PROGRESS = op_req;
-  wire op_reqrst= (op_rw?s4:s3) | oor;
+  wire op_reqrst= s4 | oor;
   wire op_reqset= PI_WR & PI_A==REG_ADDR_HI;
   always @(posedge op_reqset, posedge op_reqrst) begin
     if (op_reqset)
@@ -209,7 +209,7 @@ module pistormx(
 //	output [23:1]	M68K_A,
 // Entering S1, the processor drives a valid address on the address bus.
 // As the clock rises at the end of S7, the processor places the address and data buses in the high-impedance state
-  assign M68K_A = (s0) ? 23'bz : A_OUT;
+  assign M68K_A = (s0|(s1&!op_req)) ? 23'bz : A_OUT; //Z also in s1 since it is the state where the Pistorm is waiting
   
 //	inout [15:0]	M68K_D,
 // READ : On the falling edge of the clock entering state 7 (S7), the processor latches data from the addressed device
@@ -256,3 +256,4 @@ module pistormx(
 
 
 endmodule
+

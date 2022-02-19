@@ -10,7 +10,7 @@ Why you may consider building one :
 - It is easier to assemble manually : there is only one QFP package, the board is less crowded, with 0805 caps, and the friendly 2-layer PCB with thermal relief makes it less vulnerable to cold joints.
 - Maybe this will prove to be a suitable CPU board replacement. Your test contribution can help that.
 - It runs with the same Pi software. Except CPLD programming : do not burn Altera bitstream on Xilinx device or vice versa !
-- Because everything is reprogrammable in the CPLD, it may do things not possible on the original hardware. For example there are now two versions of the firmware : the simple one - and the one with write buffers that releases the Pi bus earlier during writes. Sysinfo show a tiny increase in CPU performance but not in chip ram access speed.
+- Because everything is reprogrammable in the CPLD, it may do things not possible on the original hardware.
 
 Why you should prefer the original CPU board :
 - This is alpha status. So far it is not guaranteed that it will work in your system or support all the features of the original.
@@ -20,16 +20,24 @@ Why you should prefer the original CPU board :
 - The v0.1 board was routed with the actual Pistorm firmware in mind, so actually the 7MHz clock does not take advantage of a Global Clock pin of the CPLD : pinout may also change in next releases of this board.
 
 # Experimental status
-This board is experimental, not yet well tested, and might not work with all system revisions and Pi or 68k software or provide the same performance or feature than the original. That it works for me does not mean that it will work for you. For this reason you are welcome to assemble your own and share test reports. And for this same reason this board or derivatives must not be sold to end users : do not sell it and do not buy it yet.
+This board is experimental, not yet well tested, and might not work with all system revisions and Pi or 68k software or provide the same performance or feature than the original. That it works for me does not mean that it will work for you. For this reason you are welcome to assemble your own and share test reports in the discord channel named "beta-testing-pistormx". And for this same reason this board or derivatives must not be sold to end users : do not sell it and do not buy it yet.
 
 - I am an end user, where can I buy it? Buy an original Pistorm CPU board.
 - I am a builder, can I sell it? For now, please test it and report your test results.
 - I am a maker, can I build derivatives? For now, please test it and report your test results.
 
-Tested so far with success :
+Available firmwares:
+- basic : mostly similar to the features of original Pistorm firmware.
+- skip s5s6 : skip s5 and s6 states when not in peripheral bus cycle ; this increases chip access speed according to SysInfo.
+- write buffers : use the CPLD registers as double buffers to releases the Pi bus earlier during writes ; SysInfo show a tiny increase in CPU performance but not in chip ram access speed.
+- write buffers skip s5s6 : combination of the two above.
+
+Tested so far :
 - inside my own Amiga 500 rev8a,
 - buptest,
-- Musashi based emulator with basic configurations and KS1.3, 3.1 and DiagROM.
+- Musashi based emulator with basic configuration and KS1.3, 3.1 and DiagROM, few demos and games from floppy,
+- EMU68 with basic configuration, HDD install of KS3.1 and few WHDLoad games.
+Os runs stable for hours installing files from floppies or from SDbox. Found glitches in games and demos (music not in sync, errors), need to confirm they are the same with original CPU board.
 
 # Acknowledgements
 The board and its firmware are inspired by the original Pistorm : https://github.com/captain-amygdala/pistorm.
