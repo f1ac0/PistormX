@@ -5,7 +5,9 @@ This Pistorm'X is a simplified CPU board, where all the logic is integrated insi
 
 It has major differences in the logic implementation to accommodate the slower CPLD and may behave differently than the original Pistorm CPU board. A challenge has been to get rid of the 200MHz clock since the fastest Xilinx part in this series, the 5ns one, is rated for 178MHz max and is overpriced because of the chip shortage. Not using the PI_CLK makes the firmware really different from the original : a standard 10ns XC95144 can now deal with both the M68000 bus cycle synchronously to the 7MHz clock, and the asynchronous communication with the Pi that is just within the 10ns limit. 
 
-Why you may consider building one :
+The Pistorm'X logic is now also working on the original Pistorm CPU board. See the CPLD/Pistorm subdirectory to try it on your board !
+
+Why you may consider building a Pistorm'X :
 - This is even cheaper than the original board thanks to its single chip and 2-layer PCB.
 - It is easier to assemble manually : there is only one QFP package, the board is less crowded, with 0805 caps, and the friendly 2-layer PCB with thermal relief makes it less vulnerable to cold joints.
 - Maybe this will prove to be a suitable CPU board replacement. Your test contribution can help that.
@@ -13,7 +15,7 @@ Why you may consider building one :
 - Because everything is reprogrammable in the CPLD, it may do things not possible on the original hardware.
 
 Why you should prefer the original CPU board :
-- This is alpha status. So far it is not guaranteed that it will work in your system or support all the features of the original.
+- This Pistorm'X is alpha status. So far it is not guaranteed that it will work in your system or support all the features of the original.
 - It is not an official board.
 - It will probably not be compatible with future improvements or there will be delays to implement them.
 - The actual CPLD pinout was chosen only to ease PCB routing and use a cheap 2-layers PCB. Future versions for different targets (A600, A2000...) will probably do the same and require a different CPLD pinout for each board, which means dedicated firmware files.
@@ -36,8 +38,9 @@ Tested so far :
 - inside my own Amiga 500 rev8a,
 - buptest,
 - Musashi based emulator with basic configuration and KS1.3, 3.1 and DiagROM, few demos and games from floppy,
-- EMU68 with basic configuration, HDD install of KS3.1 and few WHDLoad games.
-Os runs stable for hours installing files from floppies or from SDbox. Found glitches in games and demos (music not in sync, errors), need to confirm they are the same with original CPU board.
+- EMU68 with HDD install of KS3.1, RTG and WHDLoad games, demos.
+
+Os runs stable for hours installing files from floppies or from SDbox. All the many glitches and errors that I found in games and demos (music not in sync, freeze) so far are similar when using the Pistorm'X or the Pistorm.
 
 # Acknowledgements
 The board and its firmware are inspired by the original Pistorm : https://github.com/captain-amygdala/pistorm.
