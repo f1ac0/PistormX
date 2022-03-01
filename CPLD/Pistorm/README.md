@@ -7,12 +7,14 @@ It has major differences in the logic implementation to accommodate a slower CPL
 
 Here you can find adapted Pistorm'X firmwares to be used on the original Pistorm CPU board with external buffer chips :
 - basic : mostly similar to the features of original Pistorm firmware.
-- skip s5s6 : skip s5 and s6 states when not in peripheral bus cycle ; this increases chip access speed according to SysInfo.
+- skip s5s6 : skip s5 and s6 states when not in peripheral bus cycle.
 
 Provided .svf files are built for the EPM240 CPLD.
 Do not burn Altera bitstream on Xilinx device or vice versa ! Use with caution it could burn your Pi, your Amiga, your house.
 
 # Experimental status
+Actually even if they succeed the buptest and boot both Musashi and EMU68, they are unstable on my board. For example in amigaTestKit, testing the RTC clock does crash : maybe it has something to do with peripheral cycles.
+
 Pistorm'X is experimental, not yet well tested, and might not work with all system revisions and Pi or 68k software or provide the same performance or feature than the original. That it works for me does not mean that it will work for you. For this reason you are welcome to assemble your own and share test reports in the Discord channel named "beta-testing-pistormx".
 
 # Making it

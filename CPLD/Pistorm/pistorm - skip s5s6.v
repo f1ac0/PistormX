@@ -157,7 +157,7 @@ module pistorm(
   
 // Sync with 68K bus operations
   assign PI_TXN_IN_PROGRESS = op_req;
-  wire op_reqrst= s4 | oor;
+  wire op_reqrst= s7 | oor;
   wire op_reqset= PI_WR & PI_A==REG_ADDR_HI;
   always @(posedge op_reqset, posedge op_reqrst) begin
     if (op_reqset)
@@ -230,7 +230,7 @@ module pistorm(
 // Entering S1, the processor drives a valid address on the address bus.
 // As the clock rises at the end of S7, the processor places the address and data buses in the high-impedance state
 //  assign M68K_A = (s0) ? 23'bz : A_OUT;
-  assign LTCH_A_OE_n = s0|s1;
+  assign LTCH_A_OE_n = s0|(s1&!op_req);
   
 //	inout [15:0]	M68K_D,
 // READ : On the falling edge of the clock entering state 7 (S7), the processor latches data from the addressed device
@@ -243,7 +243,7 @@ module pistorm(
   assign LTCH_D_RD_U = s4;
   assign LTCH_D_RD_L = s4;
 //  assign M68K_D = (s0|s1|s2|op_rw) ? 16'bz : D_OUT;
-  assign LTCH_D_WR_OE_n = s0|s1|s2|op_rw;
+  assign LTCH_D_WR_OE_n = s0|s1|op_rw;
   
 //	output  reg [2:0] M68K_FC,
 //not supported
