@@ -5,7 +5,7 @@ This Pistorm'X is a simplified CPU board, where all the logic is integrated insi
 
 It has major differences in the logic implementation to accommodate the slower CPLD and may behave differently than the original Pistorm CPU board. A challenge has been to get rid of the 200MHz clock since the fastest Xilinx part in this series, the 5ns one, is rated for 178MHz max and is overpriced because of the chip shortage. Not using the PI_CLK makes the firmware really different from the original : a standard 10ns XC95144 can now deal with both the M68000 bus cycle synchronously to the 7MHz clock, and the asynchronous communication with the Pi that is just within the 10ns limit. 
 
-The Pistorm'X logic is now also working on the original Pistorm CPU board. See the CPLD/Pistorm subdirectory to try it on your board !
+The Pistorm'X logic is also provided for the original Pistorm CPU board. See the CPLD/Pistorm subdirectory to try it on your board.
 
 Why you may consider building a Pistorm'X :
 - This is even cheaper than the original board thanks to its single chip and 2-layer PCB.
@@ -29,10 +29,10 @@ This board is experimental, not yet well tested, and might not work with all sys
 - I am a maker, can I build derivatives? For now, please test it and report your test results.
 
 Available firmwares:
-- basic : mostly similar to the features of original Pistorm firmware.
-- skip s5s6 : skip s5 and s6 states when not in peripheral bus cycle ; this increases chip access speed according to SysInfo.
-- write buffers : use the CPLD registers as double buffers to releases the Pi bus earlier during writes ; SysInfo show a tiny increase in CPU performance but not in chip ram access speed.
-- write buffers skip s5s6 : combination of the two above.
+- 8 states cycle : follow the complete 8 states 68k bus cycle described in MC68000 user manual.
+- 6 states cycle : use a 6 states bus cycle by skipping s5 and s6 states. Similar to the original Pistorm firmware that skip s7 and s0 to increase chip access speed according to SysInfo.
+- 6 states cycle write buffer : use CPLD registers as double buffer to releases the Pi bus earlier during write operations ; SysInfo show a tiny increase in CPU performance but not in chip ram access speed.
+- 4 states cycle write buffer : use a 4 states bus cycle by skipping s0, s1, s5 and s6 states and a write buffer ; no real speed increase according to SysInfo, maybe useful in other apps.
 
 Tested so far :
 - inside my own Amiga 500 rev8a,

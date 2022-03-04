@@ -55,14 +55,10 @@ module pistormx(
   reg [15:0] d_out;
   reg [23:1] a_out;
 
-  reg s0=1'd1; //M68K bus states
-  reg s1=1'd0;
   reg s2=1'd0;
   reg s3=1'd0;
   reg s4=1'd0;
-  reg s5=1'd0;
-  reg s6=1'd0;
-  reg s7=1'd0;
+  reg s7=1'd1; //M68K default bus state
 
   reg [3:0] e_counter = 4'd0;
 
@@ -142,7 +138,9 @@ module pistormx(
 // Sync with 68K bus operations
   assign PI_TXN_IN_PROGRESS = op_req;
 
-  wire op_reqrst= (op_rw?s4:s3) | oor;
+//release write early thanks to the buffer. Here in S2 however it seems there is no speed increase over release in s3  with (op_rw?s4:s3) | oor
+//release read in s4 because it is not buffered
+  wire op_reqrst= s4&op_rw | s2&!buf_rw | oor;
   wire op_reqset= PI_WR & PI_A==REG_ADDR_HI;
   always @(posedge op_reqset, posedge op_reqrst) begin
     if (op_reqset)
@@ -171,25 +169,15 @@ module pistormx(
 //68K BUS SIDE
 
 // BUS TRANSFER STATE MACHINE
-  wire s1rst= s2 | oor;
   wire s2rst= s3 | oor;
   wire s3rst= s4 | oor;
-  wire s4rst= s5 | oor;
-  wire s5rst= s6 | oor;
-  wire s6rst= s7 | oor;
-  wire s7rst= s0 | oor;
-  always @(negedge c7m, posedge s1rst) begin
-    if(s1rst)
-      s1<=1'd0;
-    else if(s0)
-      s1<=1'd1;
-  end
+  wire s4rst= s7 | oor;
+  wire s7rst= s2;
   always @(posedge c7m, posedge s2rst) begin
     if(s2rst)
       s2<=1'd0;
-    else if(s1 && op_req) begin
+    else if(s7 && op_req)
       s2<=1'd1;
-    end
   end
   always @(negedge c7m, posedge s3rst) begin
     if(s3rst)
@@ -200,44 +188,26 @@ module pistormx(
   always @(posedge c7m, posedge s4rst) begin
     if(s4rst)
       s4<=1'd0;
-    else if(s3 && (!M68K_DTACK_n || (!M68K_VMA_nr && e_counter == 4'd8)) )
+    else if(s3 && (!M68K_DTACK_n || (!M68K_VMA_nr && e_counter == 4'd9)) ) //S7 rise and E fall must match
       s4<=1'd1;
-  end
-  always @(negedge c7m, posedge s5rst) begin
-    if(s5rst)
-      s5<=1'd0;
-    else if(s4)
-      s5<=1'd1;
-  end
-  always @(posedge c7m, posedge s6rst) begin
-    if(s6rst)
-      s6<=1'd0;
-    else if(s5)
-      s6<=1'd1;
   end
   always @(negedge c7m, posedge s7rst) begin
     if(s7rst)
       s7<=1'd0;
-    else if(s6)
+    else if(s4 | oor)
       s7<=1'd1;
-  end
-  always @(posedge c7m, posedge s1) begin
-    if(s1)
-      s0<=1'd0;
-    else if(s7 | oor)
-      s0<=1'd1;
   end
 
 //	output [23:1]	M68K_A,
 // Entering S1, the processor drives a valid address on the address bus.
 // As the clock rises at the end of S7, the processor places the address and data buses in the high-impedance state
-  assign M68K_A = (s0|s1) ? 23'bz : a_out;  //Z also in s1 since it is the state where the Pistorm is waiting
+  assign M68K_A = (s7&!op_req) ? 23'bz : a_out; //Z in s7 since it is the state where the Pistorm is waiting
   
 //	inout [15:0]	M68K_D,
 // READ : On the falling edge of the clock entering state 7 (S7), the processor latches data from the addressed device
 // WRITE : During S3, the data bus is driven out of the high-impedance state as the data to be written is placed on the bus.
 // As the clock rises at the end of S7, the processor places the address and data buses in the high-impedance state
-  assign M68K_D = (s0|s1|s2|op_rw) ? 16'bz : d_out;
+  assign M68K_D = ((s7&!op_req)|s2|op_rw) ? 16'bz : d_out;
 
 //	output  reg [2:0] M68K_FC,
 //not supported
@@ -245,21 +215,21 @@ module pistormx(
 //	output      M68K_AS,
 // On the rising edge of S2, the processor asserts AS and drives R/W low.
 // On the falling edge of the clock entering S7, the processor negates AS, UDS, or LDS
-  assign M68K_AS_n = (s0|s1|s7) ? 1'b1:1'b0;
+  assign M68K_AS_n = (s7) ? 1'b1:1'b0;
 
 //	output      M68K_UDS,
 //	output      M68K_LDS,
 // READ : On the rising edge of state 2 (S2), the processor asserts AS and UDS, LDS, or DS
-// WRITE : At the rising edge of S4, the processor asserts UDS, or LDS
+// WRITE : At the rising edge of S4, the processor asserts UDS, or LDS // wrong: DS should be set in s3
 // On the falling edge of the clock entering S7, the processor negates AS, UDS, or LDS
-  wire op_ds_n = s0|s1|((s2)&!op_rw)|s7; //|s3 DS should be set in s3 otherwise pistorm won't work !
+  wire op_ds_n = (s2&!op_rw)|s7;
   assign M68K_UDS_n = (op_ds_n|(op_sz & op_a0)) ? 1'b1:1'b0; //disable uds when byte operation on odd address
   assign M68K_LDS_n = (op_ds_n|(op_sz & !op_a0)) ? 1'b1:1'b0; //disable lds when byte operation on even address
 
 //	output      M68K_RW,
 // On the rising edge of S2, the processor asserts AS and drives R/W low.
 // As the clock rises at the end of S7, the processor drives R/W high
-  assign M68K_RW = (s0|s1|op_rw) ? 1'b1:1'b0;
+  assign M68K_RW = (op_rw) ? 1'b1:1'b0;
   
 //	output reg      M68K_VMA_n,
   wire vmarst= s7 | oor;

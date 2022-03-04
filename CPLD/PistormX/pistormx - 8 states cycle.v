@@ -178,7 +178,7 @@ module pistormx(
   always @(posedge c7m, posedge s4rst) begin
     if(s4rst)
       s4<=1'd0;
-    else if(s3 && (!M68K_DTACK_n || (!M68K_VMA_nr && e_counter == 4'd8)) )
+    else if(s3 && (!M68K_DTACK_n || (!M68K_VMA_nr && e_counter == 4'd8)) ) //S7 rise and E fall must match
       s4<=1'd1;
   end
   always @(negedge c7m, posedge s5rst) begin
@@ -232,9 +232,9 @@ module pistormx(
 //	output      M68K_UDS,
 //	output      M68K_LDS,
 // READ : On the rising edge of state 2 (S2), the processor asserts AS and UDS, LDS, or DS
-// WRITE : At the rising edge of S4, the processor asserts UDS, or LDS
+// WRITE : At the rising edge of S4, the processor asserts UDS, or LDS // wrong: DS should be set in s3
 // On the falling edge of the clock entering S7, the processor negates AS, UDS, or LDS
-  wire op_ds_n = s0|s1|((s2)&!op_rw)|s7; //|s3 DS should be set in s3 otherwise pistorm won't work !
+  wire op_ds_n = s0|s1|(s2&!op_rw)|s7;
   assign M68K_UDS_n = (op_ds_n|(op_sz & op_a0)) ? 1'b1:1'b0; //disable uds when byte operation on odd address
   assign M68K_LDS_n = (op_ds_n|(op_sz & !op_a0)) ? 1'b1:1'b0; //disable lds when byte operation on even address
 
@@ -243,7 +243,6 @@ module pistormx(
 // As the clock rises at the end of S7, the processor drives R/W high
   assign M68K_RW = (s0|s1|op_rw) ? 1'b1:1'b0;
   
-//	output reg      M68K_E,
 //	output reg      M68K_VMA_n,
   wire vmarst= s7 | oor;
   always @(posedge c7m,posedge vmarst) begin
