@@ -52,7 +52,7 @@ module pistormx(
   wire c7m = M68K_CLK;
   reg M68K_VMA_nr = 1'd1;
 
-  reg [15:0] d_out;
+  reg [15:0] d_inout;
   reg [23:1] a_out;
 
   reg s2=1'd0;
@@ -71,14 +71,6 @@ module pistormx(
   reg op_rw = 1'b1; //1=read, 0=write
   reg op_a0 = 1'b0; //1=lds, 0=uds, when sz=byte
   reg op_sz = 1'b0; //1=byte, 0=word
-
-//buffered write
-  reg [15:0] buf_d;
-  reg [23:1] buf_a;
-  reg buf_rw;
-  reg buf_a0;
-  reg buf_sz;
-
 
 // RESET
   reg [1:0] resetfilter=2'b11;
@@ -113,19 +105,19 @@ module pistormx(
 
 // PI READ CYCLE
 // place the required data word on the bus when PI_RD is set. In a REG_DATA cycle, Data is latched after the falling edge of PI_TXN_IN_PROGRESS
-  assign PI_D = ((PI_A == REG_STATUS) && PI_RD) ? {ipl, 13'd0} : ((PI_A == REG_DATA && PI_RD) ? buf_d : 16'bz);
+  assign PI_D = ((PI_A == REG_STATUS) && PI_RD) ? {ipl, 13'd0} : ((PI_A == REG_DATA && PI_RD) ? d_inout : 16'bz);
 
 // PI WRITE CYCLE
   always @(posedge PI_WR) begin
     case (PI_A)
       REG_ADDR_LO: begin
-        buf_a0 <= PI_D[0];
-        buf_a[15:1] <= PI_D[15:1];
+        op_a0 <= PI_D[0];
+        a_out[15:1] <= PI_D[15:1];
       end
       REG_ADDR_HI: begin
-        buf_a[23:16] <= PI_D[7:0];
-        buf_sz <= PI_D[8];
-        buf_rw <= PI_D[9];
+        a_out[23:16] <= PI_D[7:0];
+        op_sz <= PI_D[8];
+        op_rw <= PI_D[9];
       end
       REG_STATUS: begin
 //		  st_init <= PI_D[0];
@@ -133,14 +125,13 @@ module pistormx(
       end
     endcase
   end
-  
+
 
 // Sync with 68K bus operations
   assign PI_TXN_IN_PROGRESS = op_req;
 
-//release write early thanks to the buffer. Here in S2 however it seems there is no speed increase over release in s3 with (op_rw?s4:s3) | oor
-//release read in s4 because it is not buffered
-  wire op_reqrst= s4&op_rw | s2&!buf_rw | oor;
+//release Pi bus in s4 because read and write are not buffered.
+  wire op_reqrst= s4 | oor;
   wire op_reqset= PI_WR & PI_A==REG_ADDR_HI;
   always @(posedge op_reqset, posedge op_reqrst) begin
     if (op_reqset)
@@ -152,20 +143,12 @@ module pistormx(
   wire d_ck = (PI_WR & PI_A==REG_DATA) | (s4 & op_rw) ;
   always @(posedge d_ck) begin
     if(op_rw & (s3|s4))
-      buf_d <= M68K_D;
+      d_inout <= M68K_D;
 	else
-	  buf_d <= PI_D;
+	  d_inout <= PI_D;
   end
-  
-  always @(posedge s2) begin
-    a_out<=buf_a;
-    d_out<=buf_d;
-    op_a0<=buf_a0;
-    op_sz<=buf_sz;
-    op_rw<=buf_rw;
-  end
-  
-  
+
+
 //68K BUS SIDE
 
 // BUS TRANSFER STATE MACHINE
@@ -202,12 +185,12 @@ module pistormx(
 // Entering S1, the processor drives a valid address on the address bus.
 // As the clock rises at the end of S7, the processor places the address and data buses in the high-impedance state
   assign M68K_A = (s7&!op_req) ? 23'bz : a_out; //Z in s7 since it is the state where the Pistorm is waiting
-  
+
 //	inout [15:0]	M68K_D,
 // READ : On the falling edge of the clock entering state 7 (S7), the processor latches data from the addressed device
 // WRITE : During S3, the data bus is driven out of the high-impedance state as the data to be written is placed on the bus.
 // As the clock rises at the end of S7, the processor places the address and data buses in the high-impedance state
-  assign M68K_D = ((s7&!op_req)|s2|op_rw) ? 16'bz : d_out;
+  assign M68K_D = ((s7&!op_req)|s2|op_rw) ? 16'bz : d_inout;
 
 //	output  reg [2:0] M68K_FC,
 //not supported
@@ -230,7 +213,7 @@ module pistormx(
 // On the rising edge of S2, the processor asserts AS and drives R/W low.
 // As the clock rises at the end of S7, the processor drives R/W high
   assign M68K_RW = (op_rw) ? 1'b1:1'b0;
-  
+
 //	output reg      M68K_VMA_n,
   wire vmarst= s7 | oor;
   always @(posedge c7m,posedge vmarst) begin
@@ -243,4 +226,3 @@ module pistormx(
 
 
 endmodule
-

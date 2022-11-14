@@ -12,7 +12,9 @@ Why you may consider building a Pistorm'X :
 - It is easier to assemble manually : there is only one QFP package, the board is less crowded, with 0805 caps, and the friendly 2-layer PCB with thermal relief makes it less vulnerable to cold joints.
 - Maybe this will prove to be a suitable CPU board replacement. Your test contribution can help that.
 - It runs with the same Pi software. Except CPLD programming : do not burn Altera bitstream on Xilinx device or vice versa !
-- Because everything is reprogrammable in the CPLD, it may do things not possible on the original hardware.
+- Because everything is reprogrammable in the CPLD, it may do things not possible on the original hardware :
+  - Buffering write operations,
+  - Installing it at the same time as the 68000 CPU : check the PistormX-68k folder for more info.
 
 Why you should prefer the original CPU board :
 - This Pistorm'X is alpha status. So far it is not guaranteed that it will work in your system or support all the features of the original.
@@ -32,7 +34,8 @@ Available firmwares:
 - 8 states cycle : follow the complete 8 states 68k bus cycle described in MC68000 user manual.
 - 6 states cycle : use a 6 states bus cycle by skipping s5 and s6 states. Similar to the original Pistorm firmware that skip s7 and s0 to increase chip access speed according to SysInfo.
 - 6 states cycle write buffer : use CPLD registers as double buffer to releases the Pi bus earlier during write operations ; SysInfo show a tiny increase in CPU performance but not in chip ram access speed.
-- 4 states cycle write buffer : use a 4 states bus cycle by skipping s0, s1, s5 and s6 states and a write buffer ; no real speed increase according to SysInfo, maybe useful in other apps.
+- 4 states cycle : use a 6 states bus cycle by skipping s0, s1, s5 and s6 states.
+- 4 states cycle write buffer : use a 4 states bus cycle and a write buffer ; no real speed increase according to SysInfo, maybe useful in other apps.
 
 Tested so far :
 - inside my own Amiga 500 rev8a,
