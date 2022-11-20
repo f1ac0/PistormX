@@ -7,15 +7,12 @@ Power on and boot using the Pistorm. Maintain a long reset and the Amiga will no
 
 The Pistorm'X was created in 2021 as a replacement CPU board for the Pistorm, using less components, a cheaper PCB, easier to assemble, and freeing a GPIO pin on the Pi. Since they were more robust and lower profile, I used the same female pins as my A500-IDE-RAM board to attach the board to the host motherboard. I also broke out a few unused signals on solder jumpers. Along with a new firmware, these make it possible to modify existing Pistorm'X boards to host the DIP 68000/68010 !
 
-To make room for the huge clock counter required to time the long reset, the double write buffering has been removed from this firmware, which is base on the "4 states cycle".
+To make room for the huge clock counter required to time the long reset, the double write buffering has been removed from this firmware : it is similar to the "4 states cycle" version of the PistormX firmwares.
 
 # Experimental status
 Pistorm'X is experimental, not yet well tested, and might not work with all system revisions and Pi or 68k software or provide the same performance or feature than the original. That it works for me does not mean that it will work for you. For this reason you are welcome to assemble your own and share test reports in the Discord channel named "beta-testing-pistormx".
 
-Pistorm'X-68k is even more experimental. Few things still need some additional work :
-- EMU68 actually need a reset after cold power on ;
-- when no SD-card installed the bus is requested instead of leaving the 68K do its business
-- New boards layouts should follow after all quirks have been removed
+Pistorm'X-68k is even more experimental.
 
 # Making it
 The Pistorm'X board require a few modifications and a new firmware ! Do not plug a 68k unless these mods have been completed !
@@ -31,4 +28,9 @@ The Pistorm'X board require a few modifications and a new firmware ! Do not plug
 Build the firmware using the same settings as the Pistorm'X and flash it on the CPLD using xsvfduino, xc3sprog or your preferred method. However I recommend to install a 68K only after it has been updated and modified successfully.
 
 # Using it
-When the Pi is installed with a suitable emulator, the system should cold-boot using the Pistorm. Maintain the reset during at least 10 seconds to toggle to the 68000. Long reset again to go back to the Pistorm.
+You should consider active cooling when using the original board with the Pi placed just over the 68000, especially if you use the system for long periods. New boards layouts may solve this by placing the Pi over the A500 ROM (and with the ARM CPU on the top ?).
+
+When no Pistorm emulator is active, the system boots using the 68000.
+
+As soon as the Pistorm emulator starts, the system will reboot using the Pistorm. Maintain the reset during at least 6 seconds to disale Pistorm and use the 68000. Maintain a long reset again to go back to the Pistorm.
+

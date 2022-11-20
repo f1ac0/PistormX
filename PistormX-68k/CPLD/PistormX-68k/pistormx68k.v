@@ -49,56 +49,71 @@ module pistormx68k(
   localparam REG_ADDR_HI = 2'd2;
   localparam REG_STATUS = 2'd3;
 
-  reg pistorm_off=1'b0; //User is turning off the Pistorm
-  reg bus_requested=1'b0; //68k bus is requested by Pistorm
-  reg bus_granted=1'b0; //68k bus is granted to Pistorm
+  reg pistorm_off = 1'b0; //User has turned off the Pistorm using a long reset
+  reg pistorm_alive = 1'b0; //The Pistorm has been detected on the bus since the last manual reset (it is kept active when reset by the Pi)
+  wire pistorm_active = pistorm_alive & !pistorm_off;
+  reg bus_requested = 1'b0; //When the Pistorm is active, we request is bus to the 68k ; it is relinquished at every system reset, and requested again if Pistorm is still active
+  reg bus_granted = 1'b0; //The 68k has granted its bus to the Pistorm
 
   wire c7m = bus_granted & M68K_CLK; //filtered clock when inactive
   reg vma = 1'b0;
+  
+  wire manual_reset; //pulse when reset by the system, not by the Pi
   wire oor; //pulse when out of reset, delayed by one clock pulse (required to prevent lock after reset)
 
   reg [15:0] d_inout;
   reg [23:1] a_out;
 
-  reg s2=1'd0;
-  reg s3=1'd0;
-  reg s4=1'd0;
-  reg s7=1'd1; //M68K waiting bus state
+  reg s2 = 1'd0;
+  reg s3 = 1'd0;
+  reg s4 = 1'd0;
+  reg s7 = 1'd1; //M68K waiting bus state
 
-  reg e_is_output=1'd0;
+  wire e_clock;
+  reg e_is_output = 1'd0;
   reg [3:0] e_counter = 4'd0;
 
   reg [2:0] ipl;
   reg [2:0] ipl_a;
 
 //  reg st_init = 1'b0; //1=reset, 0=run
-  reg st_reset_out = 1'b0; //1=reset, 0=run //was 1 but we must not maintain reset in case pistorm is not alive and to be able to switch using Ctrl+A+A
+  reg st_reset_out = 1'b0; //1=reset by the Pi, 0=run //was 1 but we must not maintain reset in case pistorm is not alive and to be able to switch using Ctrl+A+A
   reg op_req = 1'b0; //1=bus operation pending
   reg op_rw = 1'b1; //1=read, 0=write
   reg op_a0 = 1'b0; //1=lds, 0=uds, when sz=byte
   reg op_sz = 1'b0; //1=byte, 0=word
 
 
-// ON/OFF reset timer
+// Pistorm activation, ON/OFF reset timer
 //hold Ctrl+A+A during few seconds to toggle pistorm / 68k
-  reg [26:0] rst_timer;
-//  wire rst_3s= rst_timer[24] & rst_timer[22];
-//  wire rst_6s= rst_timer[25] & rst_timer[23];
-  wire rst_10s= rst_timer[26];
-  always @(posedge M68K_CLK)
+  reg [22:0] rst_timer = 27'b0;
+//  wire rst_overflow= rst_timer[21]; //3s
+  wire rst_overflow= rst_timer[22]; //6s
+//  wire rst_overflow= rst_timer[22] & rst_timer[21] & rst_timer[20]; //10s
+  always @(posedge e_clock) //use E_clock to spare some registers compared to 7M clock. 1 tick is 1.41 microseconds
   begin
     if(M68K_RESET_n)
       rst_timer <= 27'b0;
-    else
+    else if(rst_overflow)
+	   rst_timer <= rst_timer;
+	 else
       rst_timer <= rst_timer+1;
   end
-  always @(posedge rst_10s)
+  always @(posedge rst_overflow)
     pistorm_off <= !pistorm_off;
+//Pistorm is alive when it has some activity on its bus, until next reset by the user
+  wire pistorm_alive_set = (PI_WR ^ PI_RD) & M68K_RESET_n; // if PI_WR and PI_RD are both up, these are the Pi pullups, there is either no emulator started or no SD
+  always @(posedge pistorm_alive_set, posedge manual_reset) begin
+    if(manual_reset)
+      pistorm_alive <= 1'b0;
+	 else
+      pistorm_alive <= 1'b1;
+  end
 
 
 // BUS ARBITRATION CONTROL
 // each time we pull M68K_RESET_n we need to acquire again the bus from the host 68k (need confirmation)
-  wire brset = !pistorm_off & (PI_WR | PI_RD) & M68K_RESET_n;
+  wire brset = pistorm_active & M68K_RESET_n;
   always @(posedge brset, negedge M68K_RESET_n) begin
     if(!M68K_RESET_n)
       bus_requested <= 1'b0;
@@ -116,28 +131,29 @@ module pistormx68k(
 
 // RESET
 // generate the reset signals for our logic, for the host, and for the Pi
-  reg [1:0] resetfilter=2'b11;
+  reg [1:0] resetfilter = 2'b11;
   assign oor = resetfilter==2'b01; //pulse when out of reset. delay by one clock pulse is required to prevent lock after reset
   always @(negedge M68K_CLK) begin
     resetfilter <= {resetfilter[0],M68K_RESET_n};
   end
+  assign manual_reset = !M68K_RESET_n & !(pistorm_active & st_reset_out);
   assign PI_RESET_n = pistorm_off | M68K_RESET_n | st_reset_out; //Reset the Pi on m68kreset not requested by the pi, only when pistorm is active (otherwise emu68 boot loop)
-  assign M68K_RESET_n = (!pistorm_off & st_reset_out) ? 1'b0 : 1'bz; //Prevent the Pistorm when it is off from resetting the system
-  assign M68K_HALT_n = (!pistorm_off & st_reset_out) ? 1'b0 : 1'bz; //To reset both the processor and the external devices, the RESET and HALT input signals must be asserted at the same time
+  assign M68K_RESET_n = (pistorm_active & st_reset_out) ? 1'b0 : 1'bz; //Prevent the Pistorm when it is off from resetting the system
+  assign M68K_HALT_n = (pistorm_active & st_reset_out) ? 1'b0 : 1'bz; //To reset both the processor and the external devices, the RESET and HALT input signals must be asserted at the same time
 
 
 // E CLOCK
 // detect an external E clock and sync our internal clock to it, or output our own clock
-  wire e_input = M68K_E | e_is_output; //prevent e_input falling edge from being detected when e_is_output
+  wire e_input = M68K_E | e_is_output; //there is a pullup on M68K_E, so it is up when no 68K
   reg [1:0] e_input_filter=2'b00; //detect state change between clock ticks to sync the internal e_counter
-  reg [1:0] e_input_detected=2'b00; //bit 0=low state detected during current E cycle ; bit 1=previous E cycle
+  reg [1:0] e_input_low_detected=2'b00; //bit 0=low state detected during current E cycle ; bit 1=previous E cycle. stays 0 when no 68k
   always @(posedge M68K_CLK) begin
     e_input_filter <= {e_input_filter[0],e_input};
-    e_input_detected[0] <= (e_input_detected[0] & |e_counter) | !e_input;
-	 e_input_detected[1] <= (|e_counter)?e_input_detected[1]:e_input_detected[0];
+    e_input_low_detected[0] <= (e_input_low_detected[0] & |e_counter) | !e_input;
+	 e_input_low_detected[1] <= (|e_counter)?e_input_low_detected[1]:e_input_low_detected[0];
   end
   always @(posedge M68K_RESET_n)
-	 e_is_output <= !(|e_input_detected); //if no clock detected, output our own clock
+	 e_is_output <= !(|e_input_low_detected); //if no clock detected, output our own clock
 // internal E generation. A single period of clock E consists of 10 MC68000 clock periods (six clocks low, four clocks high)
   always @(negedge M68K_CLK) begin
     if (e_input_filter == 2'b10)
@@ -147,7 +163,8 @@ module pistormx68k(
     else
       e_counter <= e_counter + 4'd1;
   end
-  assign M68K_E = e_is_output ? ((e_counter > 4'd5) ? 1'b1:1'b0) : 1'bz; //six clocks low (0-5), four clocks high (6-9)
+  assign e_clock = (e_counter > 4'd5) ? 1'b1:1'b0; //six clocks low (0-5), four clocks high (6-9)
+  assign M68K_E = e_is_output ? e_clock : 1'bz;
 
 
 // INTERRUPT CONTROL
@@ -202,8 +219,8 @@ module pistormx68k(
   always @(posedge d_ck) begin
     if(op_rw & (s3|s4))
       d_inout <= M68K_D;
-	else
-	  d_inout <= PI_D;
+    else
+      d_inout <= PI_D;
   end
 
 
