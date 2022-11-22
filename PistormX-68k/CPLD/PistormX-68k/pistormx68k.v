@@ -1,6 +1,6 @@
 /*
  * Pistorm'X for Xilinx CPLD, with integrated buffers and without 200MHz clock
- * 68K flavour, that cohabit with the host original 68000 and can switch which one is activated by maintaining reset during at least 10 seconds
+ * 68K flavour, that can cohabit with the host original 68000 and can switch which one is activated by maintaining reset during at least 6 seconds
  * 2022 FLACO CC-BY-NC-SA
  * Inspired by original Pistorm, Copyright 2020 Claude Schwarz and Niklas Ekström, https://github.com/captain-amygdala/pistorm
  */
@@ -55,7 +55,7 @@ module pistormx68k(
   reg bus_requested = 1'b0; //When the Pistorm is active, we request is bus to the 68k ; it is relinquished at every system reset, and requested again if Pistorm is still active
   reg bus_granted = 1'b0; //The 68k has granted its bus to the Pistorm
 
-  wire c7m = bus_granted & M68K_CLK; //filtered clock when inactive
+  wire c7m = M68K_CLK;
   reg vma = 1'b0;
   
   wire manual_reset; //pulse when reset by the system, not by the Pi
@@ -70,7 +70,7 @@ module pistormx68k(
   reg s7 = 1'd1; //M68K waiting bus state
 
   wire e_clock;
-  reg e_is_output = 1'd0;
+  reg e_is_output = 1'b0;
   reg [3:0] e_counter = 4'd0;
 
   reg [2:0] ipl;
@@ -86,17 +86,14 @@ module pistormx68k(
 
 // Pistorm activation, ON/OFF reset timer
 //hold Ctrl+A+A during few seconds to toggle pistorm / 68k
-  reg [22:0] rst_timer = 27'b0;
+  reg [22:0] rst_timer = 23'd0;
 //  wire rst_overflow= rst_timer[21]; //3s
   wire rst_overflow= rst_timer[22]; //6s
 //  wire rst_overflow= rst_timer[22] & rst_timer[21] & rst_timer[20]; //10s
-  always @(posedge e_clock) //use E_clock to spare some registers compared to 7M clock. 1 tick is 1.41 microseconds
-  begin
+  always @(posedge e_clock) begin //use E_clock to spare some registers compared to 7M clock. 1 tick is 1.41 microseconds
     if(M68K_RESET_n)
-      rst_timer <= 27'b0;
-    else if(rst_overflow)
-	   rst_timer <= rst_timer;
-	 else
+      rst_timer <= 23'd0;
+    else if(!rst_overflow)
       rst_timer <= rst_timer+1;
   end
   always @(posedge rst_overflow)
@@ -143,17 +140,22 @@ module pistormx68k(
 
 
 // E CLOCK
-// detect an external E clock and sync our internal clock to it, or output our own clock
-  wire e_input = M68K_E | e_is_output; //there is a pullup on M68K_E, so it is up when no 68K
+// detect an external E clock, and if not output our own clock
+  wire e_input = M68K_E | e_is_output; //there is a pullup on M68K_E, so it stays up when no 68K
+  reg [1:0] e_input_detector = 2'd0;
+  wire e_input_detected = &e_input_detector; //3 or more falling edges
+  always @(negedge e_input) begin
+    if(!e_input_detected)
+	   e_input_detector <= e_input_detector + 2'd1;
+  end
+  always @(posedge M68K_RESET_n) begin
+    e_is_output <= !e_input_detected; //if no clock detected, output our own clock
+  end
+// sync our internal clock to the falling edge of the clock input if any
   reg [1:0] e_input_filter=2'b00; //detect state change between clock ticks to sync the internal e_counter
-  reg [1:0] e_input_low_detected=2'b00; //bit 0=low state detected during current E cycle ; bit 1=previous E cycle. stays 0 when no 68k
   always @(posedge M68K_CLK) begin
     e_input_filter <= {e_input_filter[0],e_input};
-    e_input_low_detected[0] <= (e_input_low_detected[0] & |e_counter) | !e_input;
-	 e_input_low_detected[1] <= (|e_counter)?e_input_low_detected[1]:e_input_low_detected[0];
   end
-  always @(posedge M68K_RESET_n)
-	 e_is_output <= !(|e_input_low_detected); //if no clock detected, output our own clock
 // internal E generation. A single period of clock E consists of 10 MC68000 clock periods (six clocks low, four clocks high)
   always @(negedge M68K_CLK) begin
     if (e_input_filter == 2'b10)
@@ -163,7 +165,7 @@ module pistormx68k(
     else
       e_counter <= e_counter + 4'd1;
   end
-  assign e_clock = (e_counter > 4'd5) ? 1'b1:1'b0; //six clocks low (0-5), four clocks high (6-9)
+  assign e_clock = (e_counter > 4'd5); //six clocks low (0-5), four clocks high (6-9)
   assign M68K_E = e_is_output ? e_clock : 1'bz;
 
 
@@ -173,7 +175,7 @@ module pistormx68k(
     if (ipl_a == ~M68K_IPL_n) //filter unstable signals
       ipl <= ~M68K_IPL_n;
   end
-  assign PI_IPL_ZERO = ipl == 3'd0;
+  assign PI_IPL_ZERO = (ipl == 3'd0) & bus_granted;
 
 
 // PI SIDE
@@ -234,7 +236,7 @@ module pistormx68k(
   always @(posedge c7m, posedge s2rst) begin
     if(s2rst)
       s2<=1'd0;
-    else if(s7 && op_req)
+    else if(s7 & op_req & bus_granted)
       s2<=1'd1;
   end
   always @(negedge c7m, posedge s3rst) begin
@@ -246,7 +248,7 @@ module pistormx68k(
   always @(posedge c7m, posedge s4rst) begin
     if(s4rst)
       s4<=1'd0;
-    else if(s3 && (!M68K_DTACK_n || (vma && e_counter == 4'd9)) ) //S7 rise and E fall must match
+    else if(s3 && (!M68K_DTACK_n | (vma & e_counter == 4'd9)) ) //S7 rise and E fall must match
       s4<=1'd1;
   end
   always @(negedge c7m, posedge s7rst) begin
@@ -291,10 +293,10 @@ module pistormx68k(
 
 //	output reg      M68K_VMA_n,
   wire vmarst= s7 | oor;
-  always @(posedge c7m,posedge vmarst) begin
+  always @(posedge c7m, posedge vmarst) begin
     if(vmarst)
       vma <= 1'b0;
-    else if(s3 && !M68K_VPA_n && e_counter == 4'd2)
+    else if(s3 & !M68K_VPA_n & e_counter == 4'd2)
       vma <= 1'b1;
   end
   assign M68K_VMA_n = bus_granted ? ( vma ? 1'b0:1'b1 ) : 1'bz;
