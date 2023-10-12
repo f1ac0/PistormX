@@ -5,7 +5,8 @@ Looking at the schematic of the A2000, I believe the CPU board need to support b
 
 The files in this directory are an attempt to add the support of bus arbitration signals to the first PiStorm'X CPU board (not the ones in the Beta directory).
 - They are not tested since I don't own an Amiga 2000. If you want to test it yourself on your system, feel free. If you have a spare/unused/broken one and want to make a donation to help the project, I'd be very happy.
-- The real 68000 need to be removed from the system/NOT installed on the PiStorm'X. Since the bus arbitrations are used in a normal "CPU way" this leaves now way to shut it down like the PiStorm'X 68K does. Il you install both the real 68K an the PiStorm they will use the bus at the same time, this will not work, and will probably break them. 
+- BR, BG, BGACK need to be connected as explained below on the first PiStorm'X board : if not, BR will be floating which will produce unexpected results
+- The real 68000 need to be removed from the system/NOT installed on the PiStorm'X. Since the bus arbitrations are used in a normal "CPU way" this leaves now way to shut it down like the PiStorm'X 68K does. Il you install both the real 68K an the PiStorm they will use the bus at the same time, this will not work, and will probably break them.
 
 When this is proven to work, I believe it will be great to build an A2000 CPU board with support to both the DMA devices and the real 68000.
 
