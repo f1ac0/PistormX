@@ -12,8 +12,7 @@ module ram_rangermaprom(
 	output config_oe,
 	output OVR, //positive logic here !
 	output DTACK, //positive logic here !
-	output ram1ce,
-//	output ram2ce
+	output ramce,
 	input rst_maprom_rst,
 	input rst_maprom_off
 	);
@@ -57,10 +56,10 @@ module ram_rangermaprom(
 	end
 
 //response from our device
-	assign D_o[15:12] = control_read ? {control_d} : 4'bzzzz; //control registers
-	assign config_oe = control_read;
-	assign ram1ce = ram9_range | maprom_write | maprom_read; //Lower 2MB
+	assign D_o[15:12] = control_d; //control registers
+	assign config_oe = control_read; //control registers data output enable
+	assign ramce = ram9_range | maprom_write | maprom_read; //Lower 2MB
 	assign OVR = (ram9_range | maprom_write | maprom_read | control_access); //chipset override, positive logic here !
-	assign DTACK = control_access | ram1ce; // | ram2ce;
+	assign DTACK = control_access | ramce; // | ram2ce;
 
 endmodule

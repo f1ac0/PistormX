@@ -1,7 +1,7 @@
 /*
  * Pistorm'X for Xilinx CPLD, with integrated buffers and without 200MHz clock
- * 68K flavour, that can cohabit with the host original 68000 and can switch which one is activated by maintaining reset during at least 6 seconds
- * 2022 FLACO CC-BY-NC-SA
+ * Amiga 600 flavour, that can cohabit with the host original 68000 and can switch which one is activated by maintaining reset during at least 6 seconds
+ * 2022 FLACO CC-BY-NC-SA https://github.com/f1ac0/PistormX
  * Inspired by original Pistorm, Copyright 2020 Claude Schwarz and Niklas Ekström, https://github.com/captain-amygdala/pistorm
  */
 
@@ -20,15 +20,15 @@ module pistormx600(
 	input           PI_WR,      // GPIO7
 	inout   [15:0]  PI_D,       // GPIO[23..8]
 
-	output  [23:1]	 M68K_A,
+	inout   [23:1]	 M68K_A,
 	inout   [15:0]	 M68K_D,
 	input           M68K_CLK,
 //	output  [2:0]   M68K_FC,   // PU on Amiga MB // Not used
 
 	inout           M68K_AS_n,  // PU on Amiga MB
-	output          M68K_UDS_n, // PU on Amiga MB
+	inout           M68K_UDS_n, // PU on Amiga MB
 	output          M68K_LDS_n, // PU on Amiga MB
-	output          M68K_RW,    // PU on Amiga MB
+	inout           M68K_RW,    // PU on Amiga MB
 
 	inout           M68K_DTACK_n,
 //	input           M68K_BERR_n, // Not used
@@ -48,7 +48,7 @@ module pistormx600(
 //	inout           M68K_BGACK_n, // PU on Amiga MB
 
 // RAM
-   output          OVR_n,
+	output          OVR_n,
 	output          RAMCE
 
  );
@@ -58,9 +58,7 @@ module pistormx600(
 	wire ram_d_OE;
 	wire [15:12] ram_d;
 	wire ram_ovr_range;
-   assign OVR_n = (ram_ovr_range) ? 1'b0 : 1'bz;
 	wire ram_dtack_range;
-	assign M68K_DTACK_n = (!M68K_AS_n & (ram_dtack_range)) ? 1'b0 : 1'bz;
 	wire _configin = 1'b0;
 	wire _configout;
 	
@@ -68,7 +66,7 @@ module pistormx600(
 	//ram_autoconfig
 	assign ram_ovr_range=1'b0;
 	ram_autoconfig ram(
-		M68K_A[23:12],
+		M68K_A[23:16],
 		M68K_A[6:1],
 		M68K_D[15:13],
 		M68K_RESET_n,
@@ -85,7 +83,6 @@ module pistormx600(
 `ifdef RAM_RANGER_MAPROM
 	ram_rangermaprom ram(
 		M68K_A[23:12],
-//		M68K_A[6:1],
 		M68K_D[15:13],
 		M68K_RESET_n,
 		M68K_UDS_n,
@@ -354,7 +351,8 @@ module pistormx600(
 // READ : On the falling edge of the clock entering state 7 (S7), the processor latches data from the addressed device
 // WRITE : During S3, the data bus is driven out of the high-impedance state as the data to be written is placed on the bus.
 // As the clock rises at the end of S7, the processor places the address and data buses in the high-impedance state
-  assign M68K_D = (!bus_granted | ((s7&!op_req)|s2|op_rw)) ? (ram_d_OE ? {ram_d[15:12], 12'bz} : 16'bz) : d_inout;
+  assign M68K_D[15:12] = ram_d_OE ? ram_d[15:12] : ( (!bus_granted | (s7|op_rw)) ? 4'bz : d_inout[15:12] ); //ram autoconfig data
+  assign M68K_D[11:0] = (!bus_granted | (s7|op_rw)) ? 12'bz : d_inout[11:0] ;
 
 //	output  reg [2:0] M68K_FC,
 //not supported
@@ -395,5 +393,15 @@ module pistormx600(
 //	output      M68K_BGACK,
 // indicates that some other device has become the bus master
 //  assign M68K_BGACK_n = bus_granted ? 1'b0:1'bz;
+
+//	output      M68K_DTACK_n,
+// This input signal indicates the completion of the data transfer. When the processor
+// recognizes DTACK during a read cycle, data is latched, and the bus cycle is terminated.
+// When DTACK is recognized during a write cycle, the bus cycle is terminated.
+	assign M68K_DTACK_n = (!M68K_AS_n & (ram_dtack_range)) ? 1'b0 : 1'bz;
+
+//	output      OVR_n,
+// An access to any of the internal address spaces will make the Amiga respond as the slave unless OVR* (override) is asserted.
+   assign OVR_n = (ram_ovr_range) ? 1'b0 : 1'bz;
 
 endmodule

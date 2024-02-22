@@ -1,6 +1,6 @@
 # PiStorm'X Work in progress
 
-DESIGNS IN THIS DIRECTORY ARE UNTESTED.
+NOT ALL DESIGNS IN THIS DIRECTORY ARE TESTED.
 
 If you don't know about PiStorm, the MC68000 CPU replacement using a raspberry Pi, see here : https://github.com/captain-amygdala/pistorm. This PiStorm'X is a simplified CPU board, where all the logic is integrated inside a single CPLD.
 
@@ -18,19 +18,19 @@ Thank you also to EDU_ARANA for letting me use his PiStorm logo with some modifi
 It is not supported by the PiStorm developers, please don't bother them with issues you might have with it.
 
 # PiStorm'X 500
-The original PiStorm'X project for the Amiga 500 was shared in February 2022. In November 2022, I published the PiStorm'X-68k modification to the original project, that allow keeping and using the original 68000 by (de)activating the PiStorm when needed using a long reset.
+The original PiStorm'X project for the Amiga 500 was shared in February 2022. In November 2022, I published the PiStorm'X-68k, a modification to the original project that allow keeping and using the original 68000 by (de)activating the PiStorm when needed using a long reset.
 
 This PiStorm'X 500 is an updated board for the Amiga 500 :
 - including the PiStorm'X-68k modifications,
 - moving the Pi away from the 68000, over the A500 ROM, in order to improve thermal repartition,
-- adding 2MB of Fast RAM when the Pi is disabled : there was enough room on the two sided board and I believe it is a nice addition to the stock Amiga 500. "Plus" owners may consider the RangerRAM-MapROM feature in the verilog source that needs an additional connexion to OVR ; see my A500-IDE-RAM project to learn more about it (with the difference that there is no room here to implement switchable fast/ranger-maprom).
+- adding 2MB of Fast RAM, which is especially useful during 68000 operation when the Pi is disabled : there was enough room on the two sided board and I believe it is a nice addition to the stock Amiga 500. "Plus" owners may consider the RangerRAM-MapROM feature in the verilog source that needs an additional connexion to OVR ; see my A500-IDE-RAM project to learn more about it (with the difference that there is no room here to implement switchable fast/ranger-maprom modes).
 
-This might work out of the box since all the features are taken from my other projects.
+I killed my 7805 Super Fat Agnus in the development process, because of a dodgy home designed and printed ZIF64 socket that doesn't lock correctly, and an idiot operator that touched the pins without ESD protection. I am looking for an affordable replacement. Because of this, the CPLD logic is still not fully tested, but it was already somehow working and I am confident that corrections I backported from the PiStorm'X 600 should do the job.
 
 # PiStorm'X 600
-The goal of PiStorm'X 600 is to bring the same features to the Amiga 600.
+The PiStorm'X 600 brings the same features as the PiStorm'X 500 to the Amiga 600 : maintain reset during 6 seconds or more to use the 68000, and benefit of 2MB of Fast RAM.
 
-It may require some tweaks to get with the small differences in this system (access to MC6800 peripherals for example). 
+This board is actually working on my A600, waiting for a few more tests.
 
 # PiStorm'X 1K2
 I have heard about the PiStorm32 for the Amiga 1200 and I wanted to make my own in the Pistorm'X way.
