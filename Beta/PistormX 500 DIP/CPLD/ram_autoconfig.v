@@ -26,14 +26,14 @@ module ram_autoconfig(
 		case (adr)
 			'h00: autoconfig_f = 4'b1110; // $00 : Current style board, load into memory free list
 			'h01: autoconfig_f = 4'b0110; // $02 : 0110 for 2MB, 0111 for 4MB, 0000 for 8MB
-			'h02: autoconfig_f = 4'h1; // $04 : Product number
-			'h03: autoconfig_f = 4'h0; // $06 : Product number
-			'h04: autoconfig_f = 4'h3; // $08 : Can be shut up, in 8Meg space
+			'h02: autoconfig_f = 4'hD; // $04 : Product number
+			'h03: autoconfig_f = 4'hF; // $06 : Product number
+			'h04: autoconfig_f = 4'h7; // $08 : Can be shut up, in 8Meg space
 //			'h0a: autoconfig_f = 4'hF; // $0a : reserved
-			'h08: autoconfig_f = 4'hB; // $10 : Mfg # high byte
+			'h08: autoconfig_f = 4'hA; // $10 : Mfg # high byte
 			'h09: autoconfig_f = 4'hF; // $12 : Mfg # high byte
 			'h0a: autoconfig_f = 4'hF; // $14 : Mfg # low byte
-			'h0b: autoconfig_f = 4'hE; // $16 : Mfg # low byte
+			'h0b: autoconfig_f = 4'hF; // $16 : Mfg # low byte
 //			'h11: autoconfig_f = 4'he; // $22 : serial number
 //			'h12: autoconfig_f = 4'hb; // $24 : serial number
 //			'h13: autoconfig_f = 4'h7; // $26 : serial number

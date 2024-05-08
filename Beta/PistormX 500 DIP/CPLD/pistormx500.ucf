@@ -63,10 +63,11 @@ NET M68K_D<3> LOC=P90;
 NET M68K_D<2> LOC=P89;
 NET M68K_D<1> LOC=P86;
 NET M68K_D<0> LOC=P85;
-NET M68K_CLK LOC=P27;
-//NET M68K_FC<2> LOC=P94;
-//NET M68K_FC<1> LOC=P93;
-//NET M68K_FC<0> LOC=P92;
+//NET M68K_CLK LOC=P27; // /!\ GCK pins are not suitable for M68K_CLK because rise/fall time can be over 25ns : https://support.xilinx.com/s/article/3226 . Forcing I/O does not solve the issue : https://www.eevblog.com/forum/fpga/xc9500xl-using-a-gck-pin-as-regular-io-to-match-long-transition-time-clock/new/#new
+NET M68K_CLK LOC=P76;
+//NET M68K_FC<2> LOC=P;
+//NET M68K_FC<1> LOC=P;
+//NET M68K_FC<0> LOC=P;
 
 NET M68K_AS_n LOC=P82;
 NET M68K_UDS_n LOC=P81;
@@ -74,7 +75,7 @@ NET M68K_LDS_n LOC=P80;
 NET M68K_RW LOC=P79;
 
 NET M68K_DTACK_n LOC=P78;
-//NET M68K_BERR_n LOC=P4;
+//NET M68K_BERR_n LOC=P;
 
 NET M68K_VPA_n LOC=P43;
 NET M68K_E LOC=P50;
@@ -90,6 +91,6 @@ NET M68K_HALT_n LOC=P61;
 NET M68K_BR_n LOC=P74;
 NET M68K_BG_n LOC=P77;
 //NET M68K_BGACK_n LOC=P76;
-NET OVR_n LOC=P76;
+//NET OVR_n LOC=P76;
 
 NET RAMCE LOC=P87;
