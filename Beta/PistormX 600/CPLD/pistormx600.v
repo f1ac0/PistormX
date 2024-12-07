@@ -9,27 +9,41 @@
 //`define RAM_RANGER_MAPROM 1
 //`define RAM_NONE 1
 
+module clkdiv(
+	input clk_in,
+	output clk_out,
+	input _rst_in
+	);
+	(* PWR_MODE = "LOW" *) reg b = 0;
+	assign clk_out = b;
+	always @(negedge clk_in, posedge _rst_in)
+		if(_rst_in)
+			b <= 1'b0;
+		else
+			b <= !b;
+endmodule
+
 module pistormx600(
 	output          PI_TXN_IN_PROGRESS, // GPIO0 //AUX0
-	output          PI_IPL_ZERO,        // GPIO1 //AUX1
+	(* PWR_MODE = "LOW" *) output          PI_IPL_ZERO,        // GPIO1 //AUX1
 	input   [1:0]   PI_A,       // GPIO[3..2]
 //	input           PI_CLK,     // GPIO4 // Not used
-	output          PI_RESET_n, // GPIO5
+	(* PWR_MODE = "LOW" *) output          PI_RESET_n, // GPIO5
 	input           PI_RD,      // GPIO6
 	input           PI_WR,      // GPIO7
 	inout   [15:0]  PI_D,       // GPIO[23..8]
 
-	inout   [23:1]	 M68K_A,
-	inout   [15:0]	 M68K_D,
-	input           M68K_CLK,
+	(* PWR_MODE = "LOW" *) inout   [23:1]	 M68K_A,
+	(* PWR_MODE = "LOW" *) inout   [15:0]	 M68K_D,
+	(* PWR_MODE = "LOW" *) input           M68K_CLK,
 //	output  [2:0]   M68K_FC,   // PU on Amiga MB // Not used
 
-	inout           M68K_AS_n,  // PU on Amiga MB
-	inout           M68K_UDS_n, // PU on Amiga MB
-	output          M68K_LDS_n, // PU on Amiga MB
-	inout           M68K_RW,    // PU on Amiga MB
+	(* PWR_MODE = "LOW" *) inout           M68K_AS_n,  // PU on Amiga MB
+	(* PWR_MODE = "LOW" *) inout           M68K_UDS_n, // PU on Amiga MB
+	(* PWR_MODE = "LOW" *) output          M68K_LDS_n, // PU on Amiga MB
+	(* PWR_MODE = "LOW" *) inout           M68K_RW,    // PU on Amiga MB
 
-	inout           M68K_DTACK_n,
+	(* PWR_MODE = "LOW" *) inout           M68K_DTACK_n,
 //	input           M68K_BERR_n, // Not used
 
 //	input           M68K_VPA_n,
@@ -38,17 +52,17 @@ module pistormx600(
 
 	input   [2:0]   M68K_IPL_n,
 
-	inout           M68K_RESET_n, // PU on Amiga MB
-	inout           M68K_HALT_n, // PU on Amiga MB
+	(* PWR_MODE = "LOW" *) inout           M68K_RESET_n, // PU on Amiga MB
+	(* PWR_MODE = "LOW" *) inout           M68K_HALT_n, // PU on Amiga MB
 
 // These are dealing with the host original 68k, so their directions are those of a device, not a CPU
-	output          M68K_BR_n, // PU on Amiga MB
+	(* PWR_MODE = "LOW" *) output          M68K_BR_n, // PU on Amiga MB
 	input           M68K_BG_n, // No PU on Amiga MB : need PD on expansion in case host original 68k is absent
 //	inout           M68K_BGACK_n, // PU on Amiga MB
 
 // RAM
 	output          OVR_n,
-	output          RAMCE
+	(* PWR_MODE = "LOW" *) output          RAMCE
 
  );
 
@@ -110,11 +124,11 @@ module pistormx600(
 	localparam REG_ADDR_HI = 2'd2;
 	localparam REG_STATUS = 2'd3;
 
-	reg pistorm_off = 1'b0; //User has turned off the Pistorm using a long reset
-	reg pistorm_alive = 1'b0; //The Pistorm has been detected on the bus since the last manual reset (it is kept active when reset by the Pi)
+	(* PWR_MODE = "LOW" *) reg pistorm_off = 1'b0; //User has turned off the Pistorm using a long reset
+	(* PWR_MODE = "LOW" *) reg pistorm_alive = 1'b0; //The Pistorm has been detected on the bus since the last manual reset (it is kept active when reset by the Pi)
 	wire pistorm_active = pistorm_alive & !pistorm_off;
-	reg bus_requested = 1'b0; //When the Pistorm is active, we request is bus to the 68k ; it is relinquished at every system reset, and requested again if Pistorm is still active
-	reg bus_granted = 1'b0; //The 68k has granted its bus to the Pistorm
+	(* PWR_MODE = "LOW" *) reg bus_requested = 1'b0; //When the Pistorm is active, we request is bus to the 68k ; it is relinquished at every system reset, and requested again if Pistorm is still active
+	(* PWR_MODE = "LOW" *) reg bus_granted = 1'b0; //The 68k has granted its bus to the Pistorm
 
 	wire manual_reset; //pulse when reset by the system, not by the Pi
 	wire oor; //pulse when out of reset, delayed by one clock pulse (required to prevent lock after reset)
@@ -132,8 +146,8 @@ module pistormx600(
 //  reg [3:0] e_counter = 4'd0;
 //  reg vma = 1'b0;
   
-	reg [2:0] ipl;
-	reg [2:0] ipl_a;
+	(* PWR_MODE = "LOW" *) reg [2:0] ipl;
+	(* PWR_MODE = "LOW" *) reg [2:0] ipl_a;
 
 //	reg st_init = 1'b0; //1=reset, 0=run
 	reg st_reset_out = 1'b0; //1=reset by the Pi, 0=run //was 1 but we must not maintain reset in case pistorm is not alive and to be able to switch using Ctrl+A+A
@@ -145,15 +159,43 @@ module pistormx600(
 
 // PISTORM ACTIVATION, ON/OFF reset timer
 //hold Ctrl+A+A during few seconds to toggle pistorm / 68k
-	reg [25:0] rst_timer = 23'd0;
+	//reg [25:0] rst_timer = 23'd0;
+	wire [25:0] rst_timer;
+	clkdiv clkdiv0 (M68K_CLK, rst_timer[0], M68K_RESET_n);
+	clkdiv clkdiv1 (rst_timer[0], rst_timer[1], M68K_RESET_n);
+	clkdiv clkdiv2 (rst_timer[1], rst_timer[2], M68K_RESET_n);
+	clkdiv clkdiv3 (rst_timer[2], rst_timer[3], M68K_RESET_n);
+	clkdiv clkdiv4 (rst_timer[3], rst_timer[4], M68K_RESET_n);
+	clkdiv clkdiv5 (rst_timer[4], rst_timer[5], M68K_RESET_n);
+	clkdiv clkdiv6 (rst_timer[5], rst_timer[6], M68K_RESET_n);
+	clkdiv clkdiv7 (rst_timer[6], rst_timer[7], M68K_RESET_n);
+	clkdiv clkdiv8 (rst_timer[7], rst_timer[8], M68K_RESET_n);
+	clkdiv clkdiv9 (rst_timer[8], rst_timer[9], M68K_RESET_n);
+	clkdiv clkdiv10 (rst_timer[9], rst_timer[10], M68K_RESET_n);
+	clkdiv clkdiv11 (rst_timer[10], rst_timer[11], M68K_RESET_n);
+	clkdiv clkdiv12 (rst_timer[11], rst_timer[12], M68K_RESET_n);
+	clkdiv clkdiv13 (rst_timer[12], rst_timer[13], M68K_RESET_n);
+	clkdiv clkdiv14 (rst_timer[13], rst_timer[14], M68K_RESET_n);
+	clkdiv clkdiv15 (rst_timer[14], rst_timer[15], M68K_RESET_n);
+	clkdiv clkdiv16 (rst_timer[15], rst_timer[16], M68K_RESET_n);
+	clkdiv clkdiv17 (rst_timer[16], rst_timer[17], M68K_RESET_n);
+	clkdiv clkdiv18 (rst_timer[17], rst_timer[18], M68K_RESET_n);
+	clkdiv clkdiv19 (rst_timer[18], rst_timer[19], M68K_RESET_n);
+	clkdiv clkdiv20 (rst_timer[19], rst_timer[20], M68K_RESET_n);
+	clkdiv clkdiv21 (rst_timer[20], rst_timer[21], M68K_RESET_n);
+	clkdiv clkdiv22 (rst_timer[21], rst_timer[22], M68K_RESET_n);
+	clkdiv clkdiv23 (rst_timer[22], rst_timer[23], M68K_RESET_n);
+	clkdiv clkdiv24 (rst_timer[23], rst_timer[24], M68K_RESET_n);
+	clkdiv clkdiv25 (rst_timer[24], rst_timer[25], M68K_RESET_n);
+
 	assign rst_ram_mode= !rst_timer[25] & rst_timer[24] & !rst_timer[23] & rst_timer[22]; //3s
 	wire rst_pistorm_mode= rst_timer[25] & !rst_timer[24] & rst_timer[23]; //6s
-	always @(posedge M68K_CLK) begin //use 7M clock. 1 tick is 0.141 microseconds
-		if(M68K_RESET_n)
-			rst_timer <= 26'd0;
-		else if(!rst_pistorm_mode)
-			rst_timer <= rst_timer+1;
-	end
+	//always @(posedge M68K_CLK) begin //use 7M clock. 1 tick is 0.141 microseconds
+	//	if(M68K_RESET_n)
+	//		rst_timer <= 26'd0;
+	//	else if(!rst_pistorm_mode)
+	//		rst_timer <= rst_timer+1;
+	//end
 	always @(posedge rst_pistorm_mode)
 		pistorm_off <= !pistorm_off;
 //Pistorm is alive when it has some activity on its bus, until next reset by the user
@@ -186,7 +228,7 @@ module pistormx600(
 
 // RESET
 // generate the reset signals for our logic, for the host, and for the Pi
-	reg [1:0] resetfilter = 2'b11;
+	(* PWR_MODE = "LOW" *) reg [1:0] resetfilter = 2'b11;
 	assign oor = resetfilter==2'b01; //pulse when out of reset. delay by one clock pulse is required to prevent lock after reset
 	always @(negedge M68K_CLK) begin
 		resetfilter <= {resetfilter[0],M68K_RESET_n};

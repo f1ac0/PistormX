@@ -32,17 +32,17 @@ module pistormx500(
 	input           PI_WR,      // GPIO7
 	inout   [15:0]  PI_D,       // GPIO[23..8]
 
-	inout   [23:1]	 M68K_A,
-	inout   [15:0]	 M68K_D,
-	input           M68K_CLK,
+	(* PWR_MODE = "LOW" *) inout   [23:1]	 M68K_A,
+	(* PWR_MODE = "LOW" *) inout   [15:0]	 M68K_D,
+	(* PWR_MODE = "LOW" *) input           M68K_CLK,
 //	output  [2:0]   M68K_FC,   // PU on Amiga MB // Not used
 
-	inout           M68K_AS_n,  // PU on Amiga MB
-	inout           M68K_UDS_n, // PU on Amiga MB
-	output          M68K_LDS_n, // PU on Amiga MB
-	inout           M68K_RW,    // PU on Amiga MB
+	(* PWR_MODE = "LOW" *) inout           M68K_AS_n,  // PU on Amiga MB
+	(* PWR_MODE = "LOW" *) inout           M68K_UDS_n, // PU on Amiga MB
+	(* PWR_MODE = "LOW" *) output          M68K_LDS_n, // PU on Amiga MB
+	(* PWR_MODE = "LOW" *) inout           M68K_RW,    // PU on Amiga MB
 
-	inout           M68K_DTACK_n,
+	(* PWR_MODE = "LOW" *) inout           M68K_DTACK_n,
 //	input           M68K_BERR_n, // Not used
 
 	input           M68K_VPA_n,
@@ -60,7 +60,7 @@ module pistormx500(
 //	inout           M68K_BGACK_n, // PU on Amiga MB // Not used
 
 // RAM
-	output          RAMCE
+	(* PWR_MODE = "LOW" *) output          RAMCE
 
  );
 

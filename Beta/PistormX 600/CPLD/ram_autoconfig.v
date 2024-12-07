@@ -15,9 +15,9 @@ module ram_autoconfig(
 	);
 	
 //autoconfig
-	reg configured = 1'b0;
-	reg shutup = 1'b0;
-	reg [23:21] base_address;
+	(* PWR_MODE = "LOW" *) reg configured = 1'b0;
+	(* PWR_MODE = "LOW" *) reg shutup = 1'b0;
+	(* PWR_MODE = "LOW" *) reg [23:21] base_address;
 	wire autoconfig_access = (AH[23:16] == 8'hE8) & !configured & !shutup & !_configin; //accessing autoconfig space
 	wire autoconfig_read = autoconfig_access & RW;
 	wire autoconfig_write = autoconfig_access & !RW;
